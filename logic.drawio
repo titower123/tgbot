@@ -1,0 +1,16 @@
+<mxfile host="65bd71144e">
+    <diagram id="Dikhd9F2XswTF2tQeK5y" name="Страница 1">
+        <mxGraphModel dx="1074" dy="526" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="3" value="Actor" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;" vertex="1" parent="1">
+                    <mxGeometry x="90" y="220" width="30" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="4" value="физика&lt;br&gt;математика&lt;br&gt;информатика&lt;br&gt;история&lt;br&gt;общество&lt;br&gt;русский" style="whiteSpace=wrap;html=1;aspect=fixed;" vertex="1" parent="1">
+                    <mxGeometry x="220" y="150" width="190" height="190" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>
