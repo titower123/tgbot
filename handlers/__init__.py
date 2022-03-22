@@ -1,4 +1,7 @@
-from . import start
-from . import help
-from . import test
-from . import echo
+from .help import dp
+from .start import dp
+
+from .menu_handlers import dp
+from .echo import dp
+
+__all__ = ["dp"]
