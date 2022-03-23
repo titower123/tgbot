@@ -13,3 +13,7 @@ PGPASSWORD = env.str("pgpassword")
 DB = env.str('database')
 
 POSTGRESURI = f"postgresql://{PGUSER}:{PGPASSWORD}@{IP}/{DB}"
+
+support_ids = [
+    467341786,
+]

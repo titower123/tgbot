@@ -81,7 +81,7 @@ async def directions_keyboard(facultie, form, specialization):
     )
     return markup
 
-async def direction_keyboard(facultie, form, specialization):
+async def direction_keyboard(facultie, form, specialization, direction_id):
     CURRENT_LEVEL = 4
     markup = InlineKeyboardMarkup()
     markup.row(
