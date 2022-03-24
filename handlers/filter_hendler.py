@@ -1,13 +1,8 @@
 from loader import dp
 from aiogram import types
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
-from keyboards.menu_inline import start_menu_cd
+from keyboards.filter_inline import main_keyboard
 
 async def filter_EGE(call: types.CallbackQuery):
-    markup = InlineKeyboardMarkup()
-    markup.row(
-        InlineKeyboardButton(text="Назад", callback_data=start_menu_cd.new(button_id="button_start"))
-    )
-
-
+    markup = await main_keyboard()
     await call.message.edit_text("Пункт не готов :(", reply_markup=markup)
