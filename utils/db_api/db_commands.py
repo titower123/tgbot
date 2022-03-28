@@ -4,6 +4,8 @@ from sqlalchemy import and_
 
 from utils.db_api.model import Items
 
+from utils.db_api.database import db
+
 async def add_items(**kwargs):
     newitem = await Items(**kwargs).create()
     return newitem
@@ -28,3 +30,8 @@ async def get_directions(facultie, form, specialization) -> List[Items]:
 async def get_direction(item_id) -> Items:
     item = await Items.query.where(Items.id == item_id).gino.first()
     return item
+
+async def get_all_str():
+    
+    count = await db.func.count(Items.id).gino.scalar()
+    return await Items.query.where(Items.id < count+1).gino.all()

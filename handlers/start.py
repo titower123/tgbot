@@ -1,3 +1,4 @@
+from sre_parse import State
 from typing import Union
 from aiogram import types
 from aiogram.types import CallbackQuery, Message, InlineKeyboardButton, InlineKeyboardMarkup
@@ -10,17 +11,18 @@ from utils.db_api.db_commands import get_direction
 from handlers.support_hendler import ask_support
 from keyboards.menu_inline import start_menu_cd
 from aiogram.dispatcher.filters.builtin import CommandStart
+from aiogram.dispatcher import FSMContext
 
 
 def start_markup():
     markup = InlineKeyboardMarkup(row_width=2)
     markup.row(
         InlineKeyboardButton(text="Фильтр по ЕГЭ", callback_data=start_menu_cd.new(button_id="button_EGE")),
-        InlineKeyboardButton(text="Ручной поиск", callback_data=start_menu_cd.new(button_id="button_menu")),
+        InlineKeyboardButton(text="Ручной поиск направлений", callback_data=start_menu_cd.new(button_id="button_menu")),
     )
     markup.row(
         InlineKeyboardButton(text="Задать вопрос", callback_data=start_menu_cd.new(button_id="button_question")),
-        InlineKeyboardButton(text="Документы для поступления", callback_data=start_menu_cd.new(button_id="button_documents"))
+        InlineKeyboardButton(text="Как подать заявление", callback_data=start_menu_cd.new(button_id="button_documents"))
     )
     return markup
 
@@ -83,8 +85,9 @@ async def navigate(call: types.CallbackQuery, callback_data: dict):
         direction_id = direction_id
     )
 
-@dp.callback_query_handler(start_menu_cd.filter())
-async def nav(call: types.CallbackQuery, callback_data: dict):
+@dp.callback_query_handler(start_menu_cd.filter(), state="*")
+async def nav(call: types.CallbackQuery, callback_data: dict, state: FSMContext):
+    await state.finish()
     button_id = callback_data["button_id"]
     if button_id == "button_EGE":
         await filter_EGE(call)
