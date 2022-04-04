@@ -2,18 +2,19 @@ from aiogram import types
 from aiogram.dispatcher import FSMContext
 from keyboards.menu_inline import start_menu_cd
 
-
 from keyboards.support import support_keyboard, support_callback, check_support_available, get_support_manager, \
     cancel_support, cancel_support_callback
 from loader import dp, bot
 
+
 async def ask_support(message: types.CallbackQuery):
-    text= "Связь с техподдержкой. Нажмите конпку ниже, чтобы связваться с оператором."
+    text = "Нажмите конпку ниже, чтобы связваться с оператором."
     keyboard = await support_keyboard(messages="many")
     if not keyboard:
         await message.message.edit_text("К сожалению, сейчас нет свободных операторов. Попробуйте позже.")
         return
     await message.message.edit_text(text, reply_markup=keyboard)
+
 
 @dp.callback_query_handler(support_callback.filter(messages="many", as_user="yes"))
 async def send_to_support_call(call: types.CallbackQuery, state: FSMContext, callback_data: dict):
@@ -39,6 +40,7 @@ async def send_to_support_call(call: types.CallbackQuery, state: FSMContext, cal
                            f"С вами хочет связаться пользователь {call.from_user.full_name}",
                            reply_markup=keyboard
                            )
+
 
 @dp.callback_query_handler(support_callback.filter(messages="many", as_user="no"))
 async def answer_support_call(call: types.CallbackQuery, state: FSMContext, callback_data: dict):
@@ -67,6 +69,7 @@ async def answer_support_call(call: types.CallbackQuery, state: FSMContext, call
                            reply_markup=keyboard_second_user
                            )
 
+
 @dp.message_handler(state="wait_in_support", content_types=types.ContentTypes.ANY)
 async def not_supported(message: types.Message, state: FSMContext):
     data = await state.get_data()
@@ -74,6 +77,7 @@ async def not_supported(message: types.Message, state: FSMContext):
 
     keyboard = cancel_support(second_id)
     await message.answer("Дождитесь ответа оператора или отмените сеанс", reply_markup=keyboard)
+
 
 @dp.callback_query_handler(cancel_support_callback.filter(), state=["in_support", "wait_in_support", None])
 async def exit_support(call: types.CallbackQuery, state: FSMContext, callback_data: dict):

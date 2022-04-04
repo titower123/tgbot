@@ -1,6 +1,7 @@
 from sqlalchemy import sql, Column, Sequence
 from utils.db_api.database import db
 
+
 class Items(db.Model):
     __tablename__ = 'items'
     query: sql.Select
@@ -18,5 +19,3 @@ class Items(db.Model):
     name = Column(db.String(255))
     description = Column(db.String(255))
     exams = Column(db.String(255))
-
-    
