@@ -5,3 +5,7 @@ class Filter_class(StatesGroup):
     subject2 = State()
     subject3 = State()
     subject4 = State()
+
+user_request = {
+
+}

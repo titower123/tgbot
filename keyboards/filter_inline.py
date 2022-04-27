@@ -4,16 +4,17 @@ from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram.utils.callback_data import CallbackData
 
 from keyboards.start_keyboard import start_menu_cd
+from states.filter_state import user_request
 from utils.db_api.db_commands import get_direction
 from utils.db_api.model import Items
 
 filter_cd = CallbackData('filter', 'subject_id')
 
-direction_cd = CallbackData("direction_menu", "level", 'list_directions', "direction_id")
+direction_cd = CallbackData("direction_menu", "level", 'user_id', "direction_id")
 
 
-def make_direction_cd(level, list_directions="0", direction_id="0"):
-    return direction_cd.new(level=level, list_directions=list_directions, direction_id=direction_id)
+def make_direction_cd(level, user_id="0", direction_id="0"):
+    return direction_cd.new(level=level, user_id=user_id, direction_id=direction_id)
 
 
 async def main_keyboard():
@@ -43,14 +44,14 @@ async def main_keyboard():
     return markup
 
 
-async def filter_directions_keyboard(str_directions: str):
+async def filter_directions_keyboard(user_id):
     CURRENT_LEVEL = 1
     markup = InlineKeyboardMarkup(row_width=1)
-    directions = str_directions.split()
+    directions = user_request.get(int(user_id))
     for direction in directions:
         item = await get_direction(int(direction))
         button_text = item.name
-        callback_data = make_direction_cd(level=CURRENT_LEVEL + 1, list_directions=str_directions, direction_id=item.id)
+        callback_data = make_direction_cd(level=CURRENT_LEVEL + 1, user_id=user_id, direction_id=item.id)
         markup.insert(
             InlineKeyboardButton(text=button_text, callback_data=callback_data)
         )
@@ -61,11 +62,11 @@ async def filter_directions_keyboard(str_directions: str):
     return markup
 
 
-async def filter_direction_keyboard(list_directions, direction_id):
+async def filter_direction_keyboard(user_id, direction_id):
     CURRENT_LEVEL = 2
     markup = InlineKeyboardMarkup()
     markup.row(
         InlineKeyboardButton(text="Назад",
-                             callback_data=make_direction_cd(level=CURRENT_LEVEL - 1, list_directions=list_directions))
+                             callback_data=make_direction_cd(level=CURRENT_LEVEL - 1, user_id=user_id))
     )
     return markup

@@ -18,7 +18,7 @@ def make_callback_data(level, faculties="0", form="0", specialization="0", direc
 # получаем факультеты
 async def faculties_keyboard():
     CURRENT_LEVEL = 0
-    markup = InlineKeyboardMarkup()
+    markup = InlineKeyboardMarkup(row_width=1)
     faculties = await get_faculties()
     for el in faculties:
         button_text = el.faculties_name

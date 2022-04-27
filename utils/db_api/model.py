@@ -3,7 +3,7 @@ from utils.db_api.database import db
 
 
 class Items(db.Model):
-    __tablename__ = 'items'
+    __tablename__ = 'items1'
     query: sql.Select
 
     id = Column(db.Integer, Sequence("user_id_seq"), primary_key=True)
