@@ -27,8 +27,13 @@ async def bot_start(message: Union[types.Message, types.CallbackQuery]):
         await message.answer(text=HELLO_USER.format(message.from_user.full_name),
                              reply_markup=start_markup())
     elif isinstance(message, types.CallbackQuery):
-        await message.message.edit_text(text=HELLO_USER.format(message.from_user.full_name),
-                                        reply_markup=start_markup())
+        if message.message.text == None:
+            await message.message.delete_reply_markup()
+            await message.message.answer(text=HELLO_USER.format(message.from_user.full_name),
+                                         reply_markup=start_markup())
+        else:
+            await message.message.edit_text(text=HELLO_USER.format(message.from_user.full_name),
+                                            reply_markup=start_markup())
 
 
 async def list_faculties(message: CallbackQuery, **kwargs):
