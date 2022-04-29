@@ -5,4 +5,4 @@ db = Gino()
 
 async def create_db():
     await db.set_bind(POSTGRESURI)
-    #await db.gino.create_all()
+    await db.gino.create_all()

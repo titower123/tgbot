@@ -5,7 +5,7 @@ from aiogram.utils.callback_data import CallbackData
 
 from keyboards.start_keyboard import start_menu_cd
 from states.filter_state import user_request
-from utils.db_api.db_commands import get_direction
+from utils.db_api.db_commands_hendler import get_direction
 from utils.db_api.model import Items
 
 filter_cd = CallbackData('filter', 'subject_id')

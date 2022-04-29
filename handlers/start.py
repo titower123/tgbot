@@ -7,17 +7,22 @@ from keyboards.start_keyboard import start_markup
 from loader import dp
 from keyboards.menu_inline import faculties_keyboard, forma_keyboard, specialization_keyboard, directions_keyboard, \
     direction_keyboard, menu_cd
-from utils.db_api.db_commands import get_direction
+from utils.db_api.db_commands_hendler import get_direction
 from handlers.support_hendler import ask_support
 from keyboards.menu_inline import start_menu_cd
 from aiogram.dispatcher.filters.builtin import CommandStart
 from aiogram.dispatcher import FSMContext
+from utils.db_api.db_commands_new_user import add_user,find_user
+from utils.notify_admins import notyfi_new_user_add
 
 from utils.strings import HELLO_USER
 
 
 @dp.message_handler(CommandStart())
 async def bot_start(message: Union[types.Message, types.CallbackQuery]):
+    if await find_user(message.from_user.id):
+        await notyfi_new_user_add(dp=dp, user_id=message.from_user.id, full_name=message.from_user.full_name)
+        await add_user(user_id=message.from_user.id, full_name=message.from_user.full_name)
     if isinstance(message, types.Message):
         await message.answer(text=HELLO_USER.format(message.from_user.full_name),
                              reply_markup=start_markup())
