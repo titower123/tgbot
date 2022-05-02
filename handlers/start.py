@@ -3,17 +3,18 @@ from aiogram import types
 from aiogram.types import CallbackQuery
 from handlers.doucument_hendler import get_documents
 from handlers.filter_hendler import filter_ege
-from keyboards.start_keyboard import start_markup
+from keyboards.start_keyboard import start_markup, operator_start_markup
 from loader import dp
 from keyboards.menu_inline import faculties_keyboard, forma_keyboard, specialization_keyboard, directions_keyboard, \
     direction_keyboard, menu_cd
-from utils.db_api.db_commands_hendler import get_direction
-from handlers.support_hendler import ask_support
+from utils.db_api.db_commands.db_commands_hendler import get_direction
 from keyboards.menu_inline import start_menu_cd
 from aiogram.dispatcher.filters.builtin import CommandStart
 from aiogram.dispatcher import FSMContext
-from utils.db_api.db_commands_new_user import add_user,find_user
+from utils.db_api.db_commands.db_commands_new_user import add_user, find_user
 from utils.notify_admins import notyfi_new_user_add
+from handlers.support_hendler import ask_user, get_questions
+from data.config import support_ids
 
 from utils.strings import HELLO_USER
 
@@ -24,16 +25,29 @@ async def bot_start(message: Union[types.Message, types.CallbackQuery]):
         await notyfi_new_user_add(dp=dp, user_id=message.from_user.id, full_name=message.from_user.full_name)
         await add_user(user_id=message.from_user.id, full_name=message.from_user.full_name)
     if isinstance(message, types.Message):
-        await message.answer(text=HELLO_USER.format(message.from_user.full_name),
-                             reply_markup=start_markup())
-    elif isinstance(message, types.CallbackQuery):
-        if message.message.text == None:
-            await message.message.delete_reply_markup()
-            await message.message.answer(text=HELLO_USER.format(message.from_user.full_name),
-                                         reply_markup=start_markup())
+        if support_ids.count(message.from_user.id) == 1:
+            await message.answer(text=HELLO_USER.format(message.from_user.full_name),
+                                 reply_markup=operator_start_markup())
         else:
-            await message.message.edit_text(text=HELLO_USER.format(message.from_user.full_name),
-                                            reply_markup=start_markup())
+            await message.answer(text=HELLO_USER.format(message.from_user.full_name),
+                                 reply_markup=start_markup())
+    elif isinstance(message, types.CallbackQuery):
+        if support_ids.count(message.from_user.id) == 1:
+            if message.message.text is None:
+                await message.message.delete_reply_markup()
+                await message.message.answer(text=HELLO_USER.format(message.from_user.full_name),
+                                             reply_markup=operator_start_markup())
+            else:
+                await message.message.edit_text(text=HELLO_USER.format(message.from_user.full_name),
+                                                reply_markup=operator_start_markup())
+        else:
+            if message.message.text is None:
+                await message.message.delete_reply_markup()
+                await message.message.answer(text=HELLO_USER.format(message.from_user.full_name),
+                                             reply_markup=start_markup())
+            else:
+                await message.message.edit_text(text=HELLO_USER.format(message.from_user.full_name),
+                                                reply_markup=start_markup())
 
 
 async def list_faculties(message: CallbackQuery, **kwargs):
@@ -101,8 +115,10 @@ async def nav(call: types.CallbackQuery, callback_data: dict, state: FSMContext)
     elif button_id == "button_menu":
         await list_faculties(call)
     elif button_id == "button_question":
-        await ask_support(call)
+        await ask_user(call)
     elif button_id == "button_start":
         await bot_start(call)
     elif button_id == "button_documents":
         await get_documents(call)
+    elif button_id == "button_answer":
+        await get_questions(call)

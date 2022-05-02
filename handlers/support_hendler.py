@@ -1,95 +1,51 @@
+import datetime
+
 from aiogram import types
 from aiogram.dispatcher import FSMContext
 from keyboards.menu_inline import start_menu_cd
-
-from keyboards.support import support_keyboard, support_callback, check_support_available, get_support_manager, \
-    cancel_support, cancel_support_callback
+from aiogram.types import ReplyKeyboardRemove
+from keyboards.support import ask_callback, support_callback, ask_markup, back_to_menu_markup, get_qusetions_markup
 from loader import dp, bot
+from states.ask_state import Ask_class
+from utils.db_api.db_commands.db_commands_questions import add_question
+from data.config import support_ids
 
 
-async def ask_support(message: types.CallbackQuery):
-    text = "Нажмите конпку ниже, чтобы связваться с оператором."
-    keyboard = await support_keyboard(messages="many")
-    if not keyboard:
-        await message.message.edit_text("К сожалению, сейчас нет свободных операторов. Попробуйте позже.")
-        return
-    await message.message.edit_text(text, reply_markup=keyboard)
+async def ask_user(call: types.CallbackQuery):
+    await call.message.edit_text(text='Вы можете задать свой вопрос. Оператор ответит вам позже.',
+                                 reply_markup=ask_markup())
 
 
-@dp.callback_query_handler(support_callback.filter(messages="many", as_user="yes"))
-async def send_to_support_call(call: types.CallbackQuery, state: FSMContext, callback_data: dict):
-    await call.message.edit_text("Ждем ответа от оператора!")
-
-    user_id = int(callback_data.get("user_id"))
-    if not await check_support_available(user_id):
-        support_id = await get_support_manager()
-    else:
-        support_id = user_id
-
-    if not support_id:
-        await call.message.edit_text("К сожалению, сейчас нет свободных операторов. Попробуйте позже.")
-        await state.reset_state()
-        return
-
-    await state.set_state("wait_in_support")
-    await state.update_data(second_id=support_id)
-
-    keyboard = await support_keyboard(messages="many", user_id=call.from_user.id)
-
-    await bot.send_message(support_id,
-                           f"С вами хочет связаться пользователь {call.from_user.full_name}",
-                           reply_markup=keyboard
-                           )
+async def get_questions(call: types.CallbackQuery):
+    # проверка на оператора
+    if support_ids.count(call.from_user.id) == 1:
+        await call.message.edit_text(text='Получить список вопросов', reply_markup=get_qusetions_markup())
 
 
-@dp.callback_query_handler(support_callback.filter(messages="many", as_user="no"))
-async def answer_support_call(call: types.CallbackQuery, state: FSMContext, callback_data: dict):
-    second_id = int(callback_data.get("user_id"))
-    user_state = dp.current_state(user=second_id, chat=second_id)
+#############################################################################################################
+###############################################States########################################################
+#############################################################################################################
 
-    if str(await user_state.get_state()) != "wait_in_support":
-        await call.message.edit_text("К сожалению, пользователь уже передумал.")
-        return
-
-    await state.set_state("in_support")
-    await user_state.set_state("in_support")
-
-    await state.update_data(second_id=second_id)
-
-    keyboard = cancel_support(second_id)
-    keyboard_second_user = cancel_support(call.from_user.id)
-
-    await call.message.edit_text("Вы на связи с пользователем!\n"
-                                 "Чтобы завершить общение нажмите на кнопку.",
-                                 reply_markup=keyboard
-                                 )
-    await bot.send_message(second_id,
-                           "Техподдержка на связи! Можете писать сюда свое сообщение. \n"
-                           "Чтобы завершить общение нажмите на кнопку.",
-                           reply_markup=keyboard_second_user
-                           )
+@dp.callback_query_handler(ask_callback.filter())
+async def ask_controller(call: types.CallbackQuery, callback_data: dict):
+    button_id = callback_data['accept_or_cancel']
+    match button_id:
+        case 'accept':
+            await call.message.edit_text(text='Напишите ваш вопрос')
+            await Ask_class.question.set()
+        case 'get':
+            # TODO: реализовать механизм отправки вопросов
+            await call.message.edit_text(text='Отправляю список вопросов')
 
 
-@dp.message_handler(state="wait_in_support", content_types=types.ContentTypes.ANY)
-async def not_supported(message: types.Message, state: FSMContext):
-    data = await state.get_data()
-    second_id = data.get("second_id")
-
-    keyboard = cancel_support(second_id)
-    await message.answer("Дождитесь ответа оператора или отмените сеанс", reply_markup=keyboard)
-
-
-@dp.callback_query_handler(cancel_support_callback.filter(), state=["in_support", "wait_in_support", None])
-async def exit_support(call: types.CallbackQuery, state: FSMContext, callback_data: dict):
-    user_id = int(callback_data.get("user_id"))
-    second_state = dp.current_state(user=user_id, chat=user_id)
-
-    if await second_state.get_state() is not None:
-        data_second = await second_state.get_data()
-        second_id = data_second.get("second_id")
-        if int(second_id) == call.from_user.id:
-            await second_state.reset_state()
-            await bot.send_message(user_id, "Пользователь завершил сеанс техподдержки")
-
-    await call.message.edit_text("Вы завершили сеанс.\nНажмите /start для перехода в главное меню.")
-    await state.reset_state()
+@dp.message_handler(state=Ask_class.question)
+async def ask_message(message: types.Message, state: FSMContext):
+    date_time = datetime.datetime.now()
+    now = date_time.strftime("[%m/%d/%Y][%H:%M:%S]")
+    question = message.text
+    user_id = message.from_user.id
+    user_full_name = message.from_user.full_name
+    time = now
+    await state.finish()
+    await add_question(user_id, user_full_name, question, time)
+    await message.answer(text='Ваш вопрос был отправлен', reply_markup=back_to_menu_markup())

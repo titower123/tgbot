@@ -1,10 +1,8 @@
-from cgitb import text
-from aiogram.types import ReplyKeyboardRemove, \
-    InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.utils.callback_data import CallbackData
 
 from keyboards.start_keyboard import start_menu_cd
-from utils.db_api.db_commands_hendler import get_faculties, get_forma, get_specialization, get_directions
+from utils.db_api.db_commands.db_commands_hendler import get_faculties, get_forma, get_specialization, get_directions
 
 menu_cd = CallbackData("show_menu", "level", "faculties", "form", "specialization", "direction_id")
 direct_cd = CallbackData("direct", "direction_id")
