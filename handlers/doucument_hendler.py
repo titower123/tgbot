@@ -13,5 +13,5 @@ async def get_documents(call: types.CallbackQuery):
     )
     file_id = 'BQACAgIAAxkBAANhYmv1WkfSgHs1XRlzcI61cgLmcQcAAs4UAALYMmBLstdgd03_1o0kBA'
     file_id_test = 'BQACAgIAAxkBAAIOAAFicEEQoRrNXWZJYfF44Y_R-LC3ogACUxgAAu9BgUvpA67BM4KQkCQE'
-    await dp.bot.send_document(chat_id=call.from_user.id, document=file_id_test, reply_markup=markup)
+    await dp.bot.send_document(chat_id=call.from_user.id, document=file_id, reply_markup=markup)
     await dp.bot.delete_message(chat_id=call.from_user.id, message_id=call.message.message_id)
