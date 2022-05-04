@@ -1,12 +1,10 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.utils.callback_data import CallbackData
-from keyboards.menu_inline import start_menu_cd
-
-from data.config import support_ids
-from loader import dp
+from keyboards.menu_keyboard import start_menu_cd
 
 ask_callback = CallbackData("ask_support", "accept_or_cancel")
-support_callback = CallbackData("support", "")
+support_callback = CallbackData("support", "action", "question_id")
+
 
 def ask_markup():
     markup = InlineKeyboardMarkup()
@@ -16,6 +14,7 @@ def ask_markup():
     )
     return markup
 
+
 def back_to_menu_markup():
     markup = InlineKeyboardMarkup()
     markup.add(
@@ -23,7 +22,8 @@ def back_to_menu_markup():
     )
     return markup
 
-def get_qusetions_markup():
+
+def get_questions_markup():
     markup = InlineKeyboardMarkup()
     markup.add(
         InlineKeyboardButton(text='Получить', callback_data=ask_callback.new(accept_or_cancel='get')),
@@ -31,3 +31,18 @@ def get_qusetions_markup():
     )
     return markup
 
+
+def reply_questions_markup(question_id):
+    markup = InlineKeyboardMarkup()
+    markup.add(
+        InlineKeyboardButton(text='Ответить', callback_data=support_callback.new(action='reply',
+                                                                                 question_id=question_id)),
+        InlineKeyboardButton(text='Отклонить', callback_data=support_callback.new(action='reject',
+                                                                                  question_id=question_id))
+    )
+    return markup
+
+
+def notify_operators_markup():
+    return InlineKeyboardMarkup().add(InlineKeyboardButton(text='Посмотреть все вопросы',
+                                                           callback_data=ask_callback.new(accept_or_cancel='get')))

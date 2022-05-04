@@ -2,7 +2,7 @@ from sqlalchemy import sql, Column, Sequence
 from utils.db_api.database import db
 
 
-class Items(db.Model):
+class Directions(db.Model):
     __tablename__ = 'items1'
     query: sql.Select
 

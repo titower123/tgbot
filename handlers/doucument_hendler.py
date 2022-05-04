@@ -1,8 +1,10 @@
 from loader import dp
 from aiogram import types
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
-from keyboards.menu_inline import start_menu_cd
+
+from keyboards.menu_keyboard import start_menu_cd
 import asyncio
+
 
 async def get_documents(call: types.CallbackQuery):
     markup = InlineKeyboardMarkup()

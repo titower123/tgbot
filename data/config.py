@@ -14,9 +14,5 @@ DB = env.str('database')
 
 POSTGRESURI = f"postgresql://{PGUSER}:{PGPASSWORD}@{IP}/{DB}"
 
-support_ids = [
-    467341786,
-]
+OPERATORS_IDS = env.list("OPERATORS")
 
-
-# 1851983410:AAErHp8ZMMyBXKGNTIFCToaDIX9k-2Njp88

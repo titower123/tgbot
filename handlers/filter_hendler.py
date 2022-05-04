@@ -1,18 +1,22 @@
+from loader import dp
 from aiogram import types
 from aiogram.dispatcher import FSMContext
 
-from keyboards.filter_inline import filter_direction_keyboard, filter_directions_keyboard, main_keyboard, filter_cd, \
+from keyboards.filter_keyboard import filter_direction_keyboard, filter_directions_keyboard, main_keyboard, filter_cd, \
     direction_cd
-from loader import dp
-from states.filter_state import Filter_class
-from utils.db_api.db_commands.db_commands_hendler import get_all_str, get_direction
+
+from states.filter_state import Filter_class, user_prefix
 from states.filter_state import user_request
+
+from utils.db_api.db_commands.db_commands_hendler import get_all_str, get_direction
+from data.strings import START_MESSAGE, ANSWER_1_ERROR, ITEM_SELECTION, DEF_FIND_ERROR_MESSAGE, DEF_FIND_MESSAGE, \
+    DEF_LIST_DIRECTIONS_LEVEL
 
 
 # начальное сообщение
 async def filter_ege(call: types.CallbackQuery):
     markup = await main_keyboard()
-    await call.message.edit_text("Выберите до 4-х предметов.", reply_markup=markup)
+    await call.message.edit_text(text=START_MESSAGE, reply_markup=markup)
 
 
 # обработчик первого нажатия
@@ -20,10 +24,10 @@ async def filter_ege(call: types.CallbackQuery):
 async def answer_1(call: types.CallbackQuery, callback_data: dict, state: FSMContext):
     subject_id = callback_data["subject_id"]
     if subject_id == 'Найти':
-        await call.message.answer(text='Извините, вы не выбрали <b>ни одного предмета</b>. Повторите еще раз.')
+        await call.message.answer(text=ANSWER_1_ERROR)
     else:
         await state.update_data(answer1=subject_id)
-        await call.answer(f"Вы выбрали {subject_id}")
+        await call.answer(ITEM_SELECTION.format(subject_id))
         await Filter_class.first()
 
 
@@ -38,7 +42,7 @@ async def answer_2(call: types.CallbackQuery, callback_data: dict, state: FSMCon
         await find(call, data_)
     else:
         await state.update_data(answer2=subject_id)
-        await call.answer(f"Вы выбрали {subject_id}")
+        await call.answer(ITEM_SELECTION.format(subject_id))
         await Filter_class.next()
 
 
@@ -53,7 +57,7 @@ async def answer_3(call: types.CallbackQuery, callback_data: dict, state: FSMCon
         await find(call, data_)
     else:
         await state.update_data(answer3=subject_id)
-        await call.answer(f"Вы выбрали {subject_id}")
+        await call.answer(ITEM_SELECTION.format(subject_id))
         await Filter_class.next()
 
 
@@ -67,7 +71,6 @@ async def answer_4(call: types.CallbackQuery, callback_data: dict, state: FSMCon
         await state.finish()
         await find(call, data_)
     else:
-        # await call.answer(f"Вы выбрали {subject_id}")
         await state.update_data(answer4=subject_id)
         data = await state.get_data()
         data_ = list(data.values())
@@ -82,7 +85,7 @@ async def find(callback: types.CallbackQuery, prefix):
     list_directions = []
     for el in all_data:
         count = 0
-        if el.exams != None:
+        if el.exams is not None:
             item = el.exams.split('|')
             for i in range(l_data_):
                 if item.count(prefix[i]) == 1:
@@ -91,19 +94,19 @@ async def find(callback: types.CallbackQuery, prefix):
                 list_directions.append(el.id)
                 element_count += 1
     if element_count == 0:
-        await callback.answer(
-            f'Извините, по вашему запросу ({", ".join(prefix)}) я не смог найти ни одного направления.',
-            show_alert=True)
+        await callback.answer(DEF_FIND_ERROR_MESSAGE.format(", ".join(prefix)), show_alert=True)
     else:
-        #записаьб str_list_direction в список юзер : значение str_list_direction
+        # записаьб str_list_direction в список юзер : значение str_list_direction
         user_request[callback.from_user.id] = list_directions
-        await callback.answer(f'Ваш запрос: {" ".join(prefix)}', show_alert=True)
+        user_prefix[callback.from_user.id] = ", ".join(prefix)
+        await callback.answer(DEF_FIND_MESSAGE.format(", ".join(prefix)), show_alert=True)
         await list_directions_level(callback, callback.from_user.id)
 
 
 async def list_directions_level(callback: types.CallbackQuery, user_id, direction_id=None):
     markup = await filter_directions_keyboard(user_id=user_id)
-    await callback.message.edit_text(text='Направления по вашему запросу', reply_markup=markup)
+    prefix = user_prefix[callback.from_user.id]
+    await callback.message.edit_text(DEF_LIST_DIRECTIONS_LEVEL.format(prefix), reply_markup=markup)
 
 
 async def list_direction_level(callback: types.CallbackQuery, list_directions_user_id, direction_id):
@@ -115,7 +118,7 @@ async def list_direction_level(callback: types.CallbackQuery, list_directions_us
 
 # обработчик запроса по предмету
 @dp.callback_query_handler(direction_cd.filter())
-async def navigete_directions(call: types.CallbackQuery, callback_data: dict):
+async def navigate_directions(call: types.CallbackQuery, callback_data: dict):
     current_level = callback_data.get('level')
     user_id = callback_data.get('user_id')
     direction_id = int(callback_data.get('direction_id'))

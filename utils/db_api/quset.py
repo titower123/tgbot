@@ -6,7 +6,7 @@ class Question(db.Model):
     query: sql.Select
 
     id = Column(db.Integer, Sequence("qusetion_seq"), primary_key=True)
-    user_id = Column(db.String(40))
-    full_name = Column(db.String(255))
+    user_id = Column(db.String(60))
+    message_id = Column(db.Integer)
     question = Column(db.Text)
     date_and_time = Column(db.String(60))
