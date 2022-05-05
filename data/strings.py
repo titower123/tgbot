@@ -23,7 +23,7 @@ ASK_MESSAGE = 'Ваш вопрос был отправлен'
 # support_controller
 REJECT_QUESTION_OPERATOR = 'Вопрос отклонен'
 REJECT_QUESTION_USER = 'Ваш вопрос был отклонен'
-REPLY_QUESTION_OPERATOR = 'Ответь на вопрос'
+REPLY_QUESTION_OPERATOR = 'Жду ответ на вопрос'
 # support_state
 REPLY_SENT = 'Ответ на вопрос отправлен'
 REPLY_RESEIVED = '<b>Ответ на ваш вопрос:</b>\n{}'
