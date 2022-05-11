@@ -1,3 +1,5 @@
+from typing import List
+
 from utils.db_api.new_users_model import NewUsers
 from datetime import datetime
 
@@ -14,3 +16,7 @@ async def find_user(user_id):
         return True
     else:
         return False
+
+
+async def get_all_new_users() -> List[NewUsers]:
+    return await NewUsers.query.gino.all()
