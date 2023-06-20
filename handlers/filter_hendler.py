@@ -1,136 +1,141 @@
+import logging
+from datetime import datetime
+import aiogram.utils.exceptions
 from loader import dp
 from aiogram import types
-from aiogram.dispatcher import FSMContext
-
 from keyboards.filter_keyboard import filter_direction_keyboard, filter_directions_keyboard, main_keyboard, filter_cd, \
     direction_cd
+from utils.network_tools import send_request, HttpMethod
+from core.strings import START_MESSAGE, ANSWER_1_ERROR, DEF_FIND_ERROR_MESSAGE, DEF_LIST_DIRECTIONS_LEVEL
+from .manual_search import message_text
 
-from states.filter_state import Filter_class, user_prefix
-from states.filter_state import user_request
-
-from utils.db_api.db_commands.db_commands_hendler import get_all_str, get_direction
-from data.strings import START_MESSAGE, ANSWER_1_ERROR, ITEM_SELECTION, DEF_FIND_ERROR_MESSAGE, DEF_FIND_MESSAGE, \
-    DEF_LIST_DIRECTIONS_LEVEL
+# список с предметами пользователя (ключ: id пользователя, значение: предметы)
+list_user_prefix = {}
 
 
 # начальное сообщение
 async def filter_ege(call: types.CallbackQuery):
-    markup = await main_keyboard()
-    await call.message.edit_text(text=START_MESSAGE, reply_markup=markup)
+    if call.from_user.id in list_user_prefix.keys():
+        list_user_prefix.pop(call.from_user.id)
+    await call.message.edit_text(text=START_MESSAGE, reply_markup=main_keyboard())
 
 
 # обработчик первого нажатия
 @dp.callback_query_handler(filter_cd.filter())
-async def answer_1(call: types.CallbackQuery, callback_data: dict, state: FSMContext):
+async def answer_1(call: types.CallbackQuery, callback_data: dict):
     subject_id = callback_data["subject_id"]
+    if subject_id == 'Сброс':
+        try:
+            await filter_ege(call)
+            return
+        except Exception as ex:
+            return
     if subject_id == 'Найти':
-        await call.message.answer(text=ANSWER_1_ERROR)
+        if call.from_user.id not in list_user_prefix.keys():
+            await call.answer(text=ANSWER_1_ERROR, show_alert=True)
+            try:
+                await filter_ege(call)
+            except Exception:
+                return
+        else:
+            await find(call, list_user_prefix[call.from_user.id])
     else:
-        await state.update_data(answer1=subject_id)
-        await call.answer(ITEM_SELECTION.format(subject_id))
-        await Filter_class.first()
-
-
-# обработчик второго нажатия
-@dp.callback_query_handler(filter_cd.filter(), state=Filter_class.subject1)
-async def answer_2(call: types.CallbackQuery, callback_data: dict, state: FSMContext):
-    subject_id = callback_data["subject_id"]
-    if subject_id == 'Найти':
-        data = await state.get_data()
-        data_ = list(data.values())
-        await state.finish()
-        await find(call, data_)
-    else:
-        await state.update_data(answer2=subject_id)
-        await call.answer(ITEM_SELECTION.format(subject_id))
-        await Filter_class.next()
-
-
-# обработчик третьего нажатия
-@dp.callback_query_handler(filter_cd.filter(), state=Filter_class.subject2)
-async def answer_3(call: types.CallbackQuery, callback_data: dict, state: FSMContext):
-    subject_id = callback_data["subject_id"]
-    if subject_id == 'Найти':
-        data = await state.get_data()
-        data_ = list(data.values())
-        await state.finish()
-        await find(call, data_)
-    else:
-        await state.update_data(answer3=subject_id)
-        await call.answer(ITEM_SELECTION.format(subject_id))
-        await Filter_class.next()
-
-
-# обработчик четвертого нажатия
-@dp.callback_query_handler(filter_cd.filter(), state=Filter_class.subject3)
-async def answer_4(call: types.CallbackQuery, callback_data: dict, state: FSMContext):
-    subject_id = callback_data["subject_id"]
-    if subject_id == 'Найти':
-        data = await state.get_data()
-        data_ = list(data.values())
-        await state.finish()
-        await find(call, data_)
-    else:
-        await state.update_data(answer4=subject_id)
-        data = await state.get_data()
-        data_ = list(data.values())
-        await state.finish()
-        await find(call, data_)
+        if call.from_user.id not in list_user_prefix.keys():
+            list_user_prefix[call.from_user.id] = [subject_id]
+            await call.message.edit_text(text=f'Вы выбрали: {subject_id}', reply_markup=main_keyboard())
+            return
+        if subject_id in list_user_prefix[call.from_user.id]:
+            await call.answer(text=f'Вы уже выбрали {subject_id}', show_alert=True)
+            return
+        list_user_prefix[call.from_user.id].append(subject_id)
+        await call.message.edit_text(text=f'Вы выбрали: {", ".join(list_user_prefix[call.from_user.id])}',
+                                     reply_markup=main_keyboard())
 
 
 async def find(callback: types.CallbackQuery, prefix):
-    all_data = await get_all_str()
-    l_data_ = len(prefix)
-    element_count = 0
-    list_directions = []
-    for el in all_data:
-        count = 0
-        if el.exams is not None:
-            item = el.exams.split('|')
-            for i in range(l_data_):
-                if item.count(prefix[i]) == 1:
-                    count += 1
-            if count == l_data_:
-                list_directions.append(el.id)
-                element_count += 1
-    if element_count == 0:
-        await callback.answer(DEF_FIND_ERROR_MESSAGE.format(", ".join(prefix)), show_alert=True)
-    else:
-        # записаьб str_list_direction в список юзер : значение str_list_direction
-        user_request[callback.from_user.id] = list_directions
-        user_prefix[callback.from_user.id] = ", ".join(prefix)
-        await callback.answer(DEF_FIND_MESSAGE.format(", ".join(prefix)), show_alert=True)
-        await list_directions_level(callback, callback.from_user.id)
+    print(f'|{datetime.now().strftime("%d/%m/%Y - %H:%M:%S")}|{callback.from_user.id},'
+          f' {callback.from_user.full_name}|{prefix}|- запрос пользователя в фильтре')
+    list_user_prefix[callback.from_user.id] = prefix
+    await list_directions_level(callback)
 
 
-async def list_directions_level(callback: types.CallbackQuery, user_id, direction_id=None):
-    markup = await filter_directions_keyboard(user_id=user_id)
-    prefix = user_prefix[callback.from_user.id]
-    await callback.message.edit_text(DEF_LIST_DIRECTIONS_LEVEL.format(prefix), reply_markup=markup)
+async def list_directions_level(callback: types.CallbackQuery):
+    prefix = []
+    try:
+        prefix = list_user_prefix[callback.from_user.id]
+    except Exception as e:
+        await filter_ege(callback)
+        print(f'|{datetime.now().strftime("%d/%m/%Y - %H:%M:%S")}|{callback.from_user.id},'
+              f' {callback.from_user.full_name}|{e, e.args}|- ошибка в фильтре')
+        return
+    result = await send_request("/filter", HttpMethod.post, False, json={"directions": prefix})
+    if result[0] != 200:
+        logging.error(f"{result[0]}|{result[1]}")
+        await callback.answer("Произошла ошибка!", show_alert=True)
+        return
+    resultJson = result[1]
+    if len(resultJson) == 0:
+        try:
+            print(f'|{datetime.now().strftime("%d/%m/%Y - %H:%M:%S")}|{callback.from_user.id},'
+                  f' {callback.from_user.full_name} - не удачный запрос {prefix}')
+            await callback.answer(DEF_FIND_ERROR_MESSAGE.format(", ".join(prefix)), show_alert=True)
+        except aiogram.utils.exceptions.BadRequest as exce:
+            print(
+                f'|{datetime.now().strftime("%d/%m/%Y - %H:%M:%S")}|{callback.from_user.id},'
+                f' {callback.from_user.full_name} - ошибка в запросе {exce}')
+            await callback.answer(text='Извините, по вашему запросу я не смог ничего найти', show_alert=True)
+        await filter_ege(call=callback)
+        return
+    try:
+        markup = await filter_directions_keyboard(user_id=callback.from_user.id, directions=resultJson)
+        print(f'|{datetime.now().strftime("%d/%m/%Y - %H:%M:%S")}|{callback.from_user.id},'
+              f' {callback.from_user.full_name}|- смотрит направления по запросу')
+        await callback.message.edit_text(DEF_LIST_DIRECTIONS_LEVEL.format(", ".join(prefix), len(resultJson)),
+                                         reply_markup=markup)
+    except Exception as ex:
+        await filter_ege(callback)
+        print(f'|{datetime.now().strftime("%d/%m/%Y - %H:%M:%S")}|{callback.from_user.id},'
+              f' {callback.from_user.full_name}|{ex, ex.args}|- ошибка в фильтре')
+        return
 
 
-async def list_direction_level(callback: types.CallbackQuery, list_directions_user_id, direction_id):
-    markup = await filter_direction_keyboard(user_id=str(list_directions_user_id), direction_id=direction_id)
-    direction = await get_direction(direction_id)
-    text = f"""<b>{direction.name}</b>\n\n{str(direction.description)}"""
-    await callback.message.edit_text(text=text, reply_markup=markup)
+async def list_direction_level(callback: types.CallbackQuery, direction_id):
+    result = await send_request(f"/directions/{direction_id}", HttpMethod.get, False)
+    if result[0] != 200:
+        logging.error(f"{result[0]}|{result[1]}")
+        await callback.answer("Произошла ошибка!", show_alert=True)
+        return
+    resultJson = result[1]
+    markup = await filter_direction_keyboard(user_id=callback.from_user.id, direction_id=resultJson["id"])
+    print(f'|{datetime.now().strftime("%d/%m/%Y - %H:%M:%S")}|{callback.from_user.id},'
+          f' {callback.from_user.full_name}|{direction_id}|- смотрит направление по запросу')
+    await callback.message.edit_text(text=message_text(resultJson), reply_markup=markup)
+    pass
 
 
 # обработчик запроса по предмету
 @dp.callback_query_handler(direction_cd.filter())
 async def navigate_directions(call: types.CallbackQuery, callback_data: dict):
-    current_level = callback_data.get('level')
-    user_id = callback_data.get('user_id')
-    direction_id = int(callback_data.get('direction_id'))
-
-    levels = {
-        '1': list_directions_level,
-        '2': list_direction_level
-    }
-
-    func_cur_level = levels[current_level]
-    await func_cur_level(
-        call,
-        user_id,
-        direction_id
-    )
+    current_level = int(callback_data['level'])
+    direction_id = str(callback_data['direction_id'])
+    match current_level:
+        case 1:
+            await list_directions_level(call)
+        case 2:
+            await list_direction_level(call, direction_id)
+        case 3:
+            result = await send_request("/users/bookmarks", HttpMethod.post, True,
+                                        {"user_id": call.from_user.id, "direction_id": direction_id})
+            if result[0] != 200:
+                logging.error(f"{result[0]}|{result[1]}")
+                await call.answer("Произошла ошибка!", show_alert=True)
+                return
+            await list_direction_level(call, direction_id)
+        case 4:
+            result = await send_request("/users/bookmarks", HttpMethod.delete, True,
+                                        {"user_id": call.from_user.id, "direction_id": direction_id})
+            if result[0] != 200:
+                logging.error(f"{result[0]}|{result[1]}")
+                await call.answer("Произошла ошибка!", show_alert=True)
+                return
+            await list_direction_level(call, direction_id)
